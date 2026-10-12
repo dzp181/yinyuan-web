@@ -36,6 +36,39 @@ body {
 .brand .knot { width: 26px; height: 32px; color: var(--red); }
 .brand span { font-family: var(--serif); font-size: 22px; font-weight: 700; letter-spacing: 2px; }
 .links { display: flex; gap: 36px; }
+.nav-right { display: flex; align-items: center; gap: 26px; }
+
+/* 用户区 / 登录注册 */
+.user-area { display: flex; align-items: center; gap: 12px; }
+.u-mail { font-size: 13.5px; color: var(--ink-2); max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.link-btn { background: none; border: none; font-family: var(--sans); font-size: 14.5px; color: var(--ink-2); cursor: pointer; padding: 0; }
+.link-btn:hover { color: var(--red); }
+.btn-login { background: var(--red); color: #fff; border: none; border-radius: 20px; padding: 7px 18px; font-size: 14px; cursor: pointer; font-family: var(--sans); transition: background .2s; }
+.btn-login:hover { background: var(--red-deep); }
+.btn-sm { padding: 6px 14px; font-size: 13px; border-radius: 9px; }
+.modal-narrow { max-width: 420px; }
+.auth-field { margin-bottom: 14px; }
+.auth-field label { display: block; font-size: 13px; font-weight: 600; color: var(--ink-2); margin-bottom: 6px; }
+.auth-field input {
+  width: 100%; padding: 12px 14px; font-size: 15px; border: 1.5px solid var(--line);
+  border-radius: 10px; background: #fff; outline: none; font-family: var(--sans); color: var(--ink);
+}
+.auth-field input:focus { border-color: var(--red); }
+.auth-switch { margin-top: 16px; text-align: center; font-size: 13.5px; color: var(--ink-2); display: flex; gap: 6px; justify-content: center; align-items: center; }
+.auth-switch .link-btn { color: var(--red); font-weight: 600; }
+
+/* 我的测算历史 */
+.rec-list { margin-top: 10px; }
+.rec-item {
+  display: flex; flex-direction: column; gap: 3px; padding: 12px 15px;
+  border: 1.5px solid var(--line); border-radius: 12px; margin-bottom: 10px;
+  cursor: pointer; transition: all .18s; background: #fff;
+}
+.rec-item:hover { border-color: var(--red); background: var(--red-soft); }
+.rec-item b { font-family: var(--serif); font-size: 15.5px; letter-spacing: 1px; }
+.rec-sum { font-size: 13px; color: var(--ink); }
+.rec-time { font-size: 12px; color: var(--ink-2); }
+.rec-empty { text-align: center; color: var(--ink-2); padding: 30px 0; font-size: 14px; }
 .links a {
   color: var(--ink); text-decoration: none; font-size: 16px; font-weight: 600;
   padding-bottom: 4px; border-bottom: 2px solid transparent; transition: all .2s;
@@ -213,4 +246,7 @@ body {
   .mode-grid { grid-template-columns: repeat(2, 1fr); }
   .form-grid { grid-template-columns: 1fr; }
   .links { gap: 20px; }
+  .nav-right { gap: 14px; }
+  .nav-inner { padding: 16px 16px; }
+  .u-mail { display: none; }
 }

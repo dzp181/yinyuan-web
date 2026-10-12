@@ -132,10 +132,12 @@ const MODES = {
 /* ---------------- 弹窗 ---------------- */
 const mask = $("#modal-mask"), formEl = $("#modal-form"), resEl = $("#modal-result");
 let currentMode = null;
+let currentModeKey = null;
 
 function openMode(key, preset) {
   const m = MODES[key];
   currentMode = m;
+  currentModeKey = key;
   $("#modal-title").textContent = m.title;
   $("#modal-sub").textContent = m.sub || "";
   formEl.innerHTML = "";
@@ -248,6 +250,22 @@ function showResult(json) {
   resEl.innerHTML = html;
   resEl.hidden = false;
   appendReport(html);
+  syncRecord(json);
+}
+
+/* 已登录则把测算结果静默保存到云端（失败不影响本次测算） */
+function syncRecord(json) {
+  if (!state.token) return;
+  const summary = json.score != null ? (json.score + " 分 · " + (json.grade || "")) :
+    (json.level || json.zodiac || json.fate_index != null ? "缘分指数 " + json.fate_index : "") || "";
+  fetch("/api/records", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: "Bearer " + state.token },
+    body: JSON.stringify({
+      mode: currentModeKey, title: currentMode.title + "报告",
+      summary: summary, payload: json,
+    }),
+  }).catch(() => {});
 }
 
 function appendReport(html) {
@@ -399,3 +417,149 @@ window.addEventListener("scroll", () => {
     a.classList.toggle("active", a.getAttribute("href") === "#" + cur);
   });
 }, { passive: true });
+
+/* ---------------- 用户系统（注册 / 登录 / 云同步） ---------------- */
+const AUTH_KEY = "yy_token";
+const authMask = $("#auth-mask"), recMask = $("#rec-mask");
+let authMode = "login";
+
+function authHeaders(extra) {
+  const h = Object.assign({ "Content-Type": "application/json" }, extra || {});
+  if (state.token) h.Authorization = "Bearer " + state.token;
+  return h;
+}
+
+async function loadMe() {
+  if (!state.token) { state.user = null; renderUserArea(); return; }
+  try {
+    const r = await fetch("/api/auth/me", { headers: authHeaders() });
+    const j = await r.json();
+    state.user = j.user || null;
+    if (!j.user) { state.token = ""; localStorage.removeItem(AUTH_KEY); }
+  } catch (e) {
+    state.user = null;
+  }
+  renderUserArea();
+}
+
+function renderUserArea() {
+  const el = $("#user-area");
+  if (state.user) {
+    el.innerHTML =
+      '<button class="link-btn" id="btn-rec">我的测算</button>' +
+      '<span class="u-mail">' + esc(state.user.email) + "</span>" +
+      '<button class="btn-ghost btn-sm" id="btn-logout">退出</button>';
+    $("#btn-logout").onclick = doLogout;
+    $("#btn-rec").onclick = openRecords;
+  } else {
+    el.innerHTML =
+      '<button class="link-btn" id="btn-login">登录</button>' +
+      '<button class="btn-login" id="btn-reg">注册</button>';
+    $("#btn-login").onclick = () => openAuth("login");
+    $("#btn-reg").onclick = () => openAuth("register");
+  }
+}
+
+function openAuth(mode) {
+  authMode = mode === "register" ? "register" : "login";
+  const isLogin = authMode === "login";
+  $("#auth-title").textContent = isLogin ? "登录" : "注册";
+  $("#auth-sub").textContent = isLogin
+    ? "登录后，测算报告会自动保存到你的账号"
+    : "注册即登录 · 邮箱仅用于登录，不会收到任何邮件";
+  $("#auth-submit").textContent = isLogin ? "登录" : "注册并登录";
+  $("#auth-switch-text").textContent = isLogin ? "还没有账号？" : "已经有账号了？";
+  $("#auth-switch").textContent = isLogin ? "注册新账号" : "返回登录";
+  $("#auth-password").setAttribute("autocomplete", isLogin ? "current-password" : "new-password");
+  $("#auth-error").textContent = "";
+  authMask.hidden = false;
+  setTimeout(() => $("#auth-email").focus(), 30);
+}
+
+function closeAuth() { authMask.hidden = true; }
+$("#auth-close").onclick = closeAuth;
+authMask.addEventListener("click", (e) => { if (e.target === authMask) closeAuth(); });
+
+$("#auth-switch").onclick = () => openAuth(authMode === "login" ? "register" : "login");
+
+$("#auth-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const email = $("#auth-email").value.trim();
+  const password = $("#auth-password").value;
+  const errEl = $("#auth-error"), btn = $("#auth-submit");
+  errEl.textContent = "";
+  btn.disabled = true; btn.textContent = "处理中…";
+  try {
+    const r = await fetch(authMode === "login" ? "/api/auth/login" : "/api/auth/register", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || "操作失败，请稍后再试");
+    state.token = j.token; state.user = j.user;
+    localStorage.setItem(AUTH_KEY, j.token);
+    $("#auth-password").value = "";
+    closeAuth();
+    renderUserArea();
+  } catch (ex) {
+    errEl.textContent = ex.message;
+  } finally {
+    btn.disabled = false;
+    $("#auth-submit").textContent = authMode === "login" ? "登录" : "注册并登录";
+  }
+});
+
+async function doLogout() {
+  if (state.token) {
+    try {
+      await fetch("/api/auth/logout", { method: "POST", headers: authHeaders() });
+    } catch (e) { /* 忽略网络错误，本地照常退出 */ }
+  }
+  state.token = ""; state.user = null;
+  localStorage.removeItem(AUTH_KEY);
+  renderUserArea();
+}
+
+async function openRecords() {
+  recMask.hidden = false;
+  const box = $("#rec-list");
+  box.innerHTML = '<p class="rec-empty">加载中…</p>';
+  let list = [];
+  try {
+    const r = await fetch("/api/records", { headers: authHeaders() });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || "加载失败");
+    list = j.records || [];
+    if (!list.length) {
+      box.innerHTML = '<p class="rec-empty">还没有保存过测算，先去算一份吧～</p>';
+      return;
+    }
+    box.innerHTML = list.map((rec, i) =>
+      '<div class="rec-item" data-i="' + i + '">' +
+      '<b>' + esc(rec.title) + "</b>" +
+      '<span class="rec-sum">' + esc(rec.summary || "") + "</span>" +
+      '<span class="rec-time">' + new Date(rec.created_at * 1000).toLocaleString("zh-CN") + "</span>" +
+      "</div>").join("");
+    box.querySelectorAll(".rec-item").forEach((it) => {
+      it.onclick = () => {
+        const rec = list[+it.dataset.i];
+        const m = MODES[rec.mode];
+        if (!m) return;
+        try {
+          const html = m.render(JSON.parse(rec.payload), m.badge);
+          appendReport(html);
+          recMask.hidden = true;
+          document.getElementById("baogao").scrollIntoView({ behavior: "smooth" });
+        } catch (ex) {
+          alert("这条记录已损坏，无法打开");
+        }
+      };
+    });
+  } catch (ex) {
+    box.innerHTML = '<p class="rec-empty">' + esc(ex.message) + "</p>";
+  }
+}
+$("#rec-close").onclick = () => { recMask.hidden = true; };
+recMask.addEventListener("click", (e) => { if (e.target === recMask) recMask.hidden = true; });
+
+loadMe();

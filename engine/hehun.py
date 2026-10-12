@@ -7,7 +7,7 @@
 import datetime
 from .common import (GAN, ZHI, GAN_WUXING, ZHI_WUXING, GAN_HE, GAN_HE_HUA,
                      GAN_CHONG, ZHI_HE, ZHI_HE_HUA, ZHI_CHONG, ZHI_HAI,
-                     nayin, wuxing_shengguan)
+                     nayin, wuxing_shengguan, parse_date)
 from . import pai_pan
 
 SHISHEN_SCORE = {
@@ -45,7 +45,7 @@ def _clamp(v, lo, hi):
 
 
 def _chart(date_str, hour, minute, sex):
-    d = datetime.date.fromisoformat(date_str)
+    d = parse_date(date_str)
     r = pai_pan.compute(d, hour=int(hour), minute=int(minute), sex=sex)
     p = r["pillars"]
     gan = [p[k][0] for k in ("year", "month", "day", "hour")]

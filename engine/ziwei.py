@@ -7,7 +7,7 @@
 """
 import datetime
 import math
-from .common import GAN, ZHI, nayin
+from .common import GAN, ZHI, nayin, parse_date
 from . import pai_pan
 
 # ---- 主星解读（references/ziwei-marriage.md 第 2 节） ----
@@ -138,7 +138,7 @@ def _palace_gan(year_gan_i, palace_zhi_i):
 
 
 def analyze(date_str, hour, minute, sex):
-    d = datetime.date.fromisoformat(date_str)
+    d = parse_date(date_str)
     ly, lm, ld, leap = pai_pan.solar_to_lunar(d.year, d.month, d.day)
     hour_idx = ((int(hour) + 1) // 2) % 12
 

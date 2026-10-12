@@ -1,6 +1,22 @@
 # -*- coding: utf-8 -*-
 """姻缘测算公共常量与工具。数据来源：yinyuan-skills/references/*.md"""
 
+import datetime
+
+
+def parse_date(s):
+    """'YYYY-MM-DD' -> datetime.date
+
+    兼容 Python 3.6：datetime.date.fromisoformat() 直到 3.7 才进入标准库，
+    而生产环境可能是 3.6（Alibaba Cloud Linux 3 等老镜像）。
+    """
+    s = str(s).strip().replace("/", "-").replace(".", "-")
+    parts = s.split("-")
+    if len(parts) < 3:
+        raise ValueError("日期格式应为 YYYY-MM-DD，收到：%s" % s)
+    return datetime.date(int(parts[0]), int(parts[1]), int(parts[2]))
+
+
 GAN = "甲乙丙丁戊己庚辛壬癸"
 ZHI = "子丑寅卯辰巳午未申酉戌亥"
 

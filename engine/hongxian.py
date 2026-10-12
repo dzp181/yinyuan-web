@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """红线测算引擎 —— 正缘画像与时间窗来自 references/taohua-luck.md 第 7 节"""
 import datetime
-from .common import GAN, ZHI, GAN_HE
+from .common import GAN, ZHI, GAN_HE, parse_date
 from . import pai_pan
 from .taohua import TAOHUA_POS, _GROUP_OF, ZHI_CHONG
 
@@ -33,7 +33,7 @@ DEFAULT_ADVICE = "正缘不是等来的，是在成为更好的自己的路上�
 
 def analyze(date_str, hour, minute, sex, expect=None, now=None):
     now = now or datetime.date.today()
-    d = datetime.date.fromisoformat(date_str)
+    d = parse_date(date_str)
     r = pai_pan.compute(d, hour=int(hour), minute=int(minute), sex=sex)
     p = r["pillars"]
     year_zhi_i = ZHI.index(p["year"][1])
