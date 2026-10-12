@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>月老姻缘 · 测测你的姻缘</title>
+<meta name="description" content="月老牵红线，测测你的姻缘——八字合婚、生肖配对、紫微夫妻宫、求签问姻缘、桃花运势、红线测算。娱乐为主，理性参考。">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="#home">
+      <svg class="knot" viewBox="0 0 40 48" aria-hidden="true">
+        <path d="M20 4 C13 10 13 16 20 20 C27 16 27 10 20 4 Z" fill="none" stroke="currentColor" stroke-width="2"/>
+        <path d="M20 20 C10 22 8 30 14 34 C20 38 26 34 20 20 Z" fill="none" stroke="currentColor" stroke-width="2"/>
+        <path d="M20 20 C30 22 32 30 26 34 C20 38 14 34 20 20 Z" fill="none" stroke="currentColor" stroke-width="2"/>
+        <path d="M20 38 L20 46 M14 44 C17 41 23 41 26 44" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <span>月老姻缘</span>
+    </a>
+    <nav class="links">
+      <a href="#home" class="active">首页</a>
+      <a href="#cesuan">测算</a>
+      <a href="#qiuqian">求签</a>
+      <a href="#baogao">报告</a>
+    </nav>
+  </div>
+  <div class="nav-rule"></div>
+</header>
+
+<main>
+  <!-- ============ 首页 HERO ============ -->
+  <section id="home" class="hero">
+    <h1 class="hero-title">月老牵红线，测测你的姻缘</h1>
+
+    <div class="match-card">
+      <div class="match-field">
+        <label for="hero-a">你的生日</label>
+        <input type="date" id="hero-a">
+      </div>
+      <div class="match-field">
+        <label for="hero-b">对方生日</label>
+        <input type="date" id="hero-b">
+      </div>
+      <button class="btn-primary" id="hero-go">开始合婚</button>
+    </div>
+    <p class="hero-tip">生日当天时辰越准，合婚结果越细腻 · 默认按中午 12:00 计算</p>
+  </section>
+
+  <!-- ============ 六大测算 ============ -->
+  <section id="cesuan" class="modes">
+    <div class="mode-grid">
+      <button class="mode-card" data-mode="hehun">
+        <span class="mode-icon">
+          <svg viewBox="0 0 48 48"><circle cx="18" cy="20" r="8" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="28" cy="26" r="8" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="24" cy="18" r="6" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        </span>
+        <strong>八字合婚</strong>
+        <small>生辰八字<br>测姻缘契合</small>
+      </button>
+      <button class="mode-card" data-mode="zodiac">
+        <span class="mode-icon">
+          <svg viewBox="0 0 48 48"><path d="M12 34 Q10 22 20 18 Q24 10 32 14 Q42 16 38 26 Q40 34 32 34 Z M20 18 L16 12 M20 18 L14 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="33" cy="20" r="1.4" fill="currentColor"/></svg>
+        </span>
+        <strong>生肖配对</strong>
+        <small>生肖组合<br>配对分析</small>
+      </button>
+      <button class="mode-card" data-mode="ziwei">
+        <span class="mode-icon">
+          <svg viewBox="0 0 48 48"><path d="M24 8 L27 18 L38 20 L29 26 L32 37 L24 30 L16 37 L19 26 L10 20 L21 18 Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="38" cy="10" r="1.5" fill="currentColor"/><circle cx="9" cy="34" r="1.5" fill="currentColor"/><circle cx="40" cy="32" r="1.2" fill="currentColor"/></svg>
+        </span>
+        <strong>紫微夫妻宫</strong>
+        <small>紫微斗数<br>看夫妻宫</small>
+      </button>
+      <button class="mode-card" data-mode="qiuqian">
+        <span class="mode-icon">
+          <svg viewBox="0 0 48 48"><rect x="18" y="8" width="12" height="32" rx="3" transform="rotate(14 24 24)" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="21" cy="15" r="1.4" fill="currentColor"/><circle cx="27" cy="23" r="1.4" fill="currentColor"/><circle cx="22" cy="31" r="1.4" fill="currentColor"/></svg>
+        </span>
+        <strong>求签问姻缘</strong>
+        <small>灵签占卜<br>姻缘指引</small>
+      </button>
+      <button class="mode-card" data-mode="taohua">
+        <span class="mode-icon">
+          <svg viewBox="0 0 48 48"><path d="M14 38 C20 30 26 24 36 16 M36 16 C33 15 31 12 32 9 C35 10 37 12 36 16 Z M36 16 C37 13 40 12 43 13 C42 16 39 17 36 16 Z M28 22 C26 19 27 15 30 14 C31 17 30 20 28 22 Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="20" cy="29" r="1.3" fill="currentColor"/><circle cx="16" cy="33" r="1.3" fill="currentColor"/></svg>
+        </span>
+        <strong>桃花运势</strong>
+        <small>近期桃花<br>运势走向</small>
+      </button>
+      <button class="mode-card" data-mode="hongxian">
+        <span class="mode-icon">
+          <svg viewBox="0 0 48 48"><path d="M10 34 C14 22 22 26 22 32 C22 38 14 38 16 30 C18 22 28 18 34 22 C40 26 36 34 30 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </span>
+        <strong>红线测算</strong>
+        <small>红线姻缘<br>缘分强弱</small>
+      </button>
+    </div>
+  </section>
+
+  <!-- ============ 求签专区 ============ -->
+  <section id="qiuqian" class="qian-section">
+    <div class="qian-box">
+      <div class="qian-head">
+        <h2>求签问姻缘</h2>
+        <p>心诚则灵 · 同一天同一问题得同一支签</p>
+      </div>
+      <div class="qian-form">
+        <input type="text" id="qian-name" placeholder="你的称呼（可选）" maxlength="20">
+        <input type="text" id="qian-question" placeholder="想问的姻缘问题，如：何时能遇到对的人？" maxlength="50">
+        <button class="btn-primary" id="qian-go">诚心求签</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 报告 ============ -->
+  <section id="baogao" class="report-section">
+    <h2 class="report-title">测算报告</h2>
+    <div id="report-empty" class="report-empty">
+      <svg viewBox="0 0 48 48" class="empty-knot"><path d="M24 8 C17 14 17 20 24 24 C31 20 31 14 24 8 Z M24 24 C14 26 12 34 18 38 C24 42 30 38 24 24 Z M24 24 C34 26 36 34 30 38 C24 42 18 38 24 24 Z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      <p>选择任意一种测算方式，报告会出现在这里</p>
+    </div>
+    <div id="report-list"></div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="footer-rule"></div>
+  <p>娱乐为主，理性参考 · 姻缘天注定，幸福自己争</p>
+  <p class="footer-sub">算法依据中华传统术数知识库（八字合婚 / 生肖配对 / 紫微斗数 / 灵签 / 桃花运势）· <a href="https://github.com/dzp181/yinyuan-web" target="_blank" rel="noopener">GitHub</a></p>
+</footer>
+
+<!-- ============ 测算弹窗 ============ -->
+<div class="modal-mask" id="modal-mask" hidden>
+  <div class="modal" role="dialog" aria-modal="true">
+    <button class="modal-close" id="modal-close" aria-label="关闭">×</button>
+    <h3 class="modal-title" id="modal-title">测算</h3>
+    <form class="modal-form" id="modal-form"></form>
+    <div class="modal-result" id="modal-result" hidden></div>
+  </div>
+</div>
+
+<script src="/app.js"></script>
+</body>
+</html>
