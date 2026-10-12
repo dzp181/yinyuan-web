@@ -96,6 +96,7 @@ function openMode(key, preset) {
   const m = MODES[key];
   currentMode = m;
   $("#modal-title").textContent = m.title;
+  $("#modal-sub").textContent = m.sub || "";
   formEl.innerHTML = "";
   const grid = document.createElement("div");
   grid.className = "form-grid";
