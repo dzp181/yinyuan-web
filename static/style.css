@@ -58,12 +58,16 @@ body {
 }
 .match-field { flex: 1 1 220px; text-align: left; }
 .match-field label { display: block; font-weight: 700; font-size: 16px; margin-bottom: 10px; }
-.match-field input {
+.match-field input, .match-field select {
   width: 100%; padding: 13px 16px; font-size: 15px; color: var(--ink);
   border: 1.5px solid var(--line); border-radius: 10px; background: var(--paper-2);
   outline: none; transition: border .2s; font-family: var(--sans);
 }
-.match-field input:focus { border-color: var(--red); }
+.match-field input:focus, .match-field select:focus { border-color: var(--red); }
+
+/* 年/月/日 三下拉组 */
+.ymd { display: flex; gap: 8px; }
+.ymd select { flex: 1 1 0; min-width: 0; }
 .btn-primary {
   background: var(--red); color: #fff; border: none; cursor: pointer;
   font-size: 17px; font-weight: 700; letter-spacing: 4px;
@@ -157,6 +161,7 @@ body {
 .notes li::before { content: ""; position: absolute; left: 2px; top: 14px; width: 7px; height: 7px; border-radius: 50%; background: var(--red); opacity: .75; }
 
 /* 八字/命盘小表 */
+.pillars-note { text-align: center; color: var(--ink-2); font-size: 13px; margin-top: 14px; }
 .pillars { display: flex; gap: 10px; justify-content: center; margin: 14px 0 4px; flex-wrap: wrap; }
 .pillar { background: var(--paper-2); border: 1px solid var(--line); border-radius: 12px; padding: 10px 18px; text-align: center; }
 .pillar em { display: block; font-style: normal; font-size: 12px; color: var(--ink-2); }

@@ -7,22 +7,85 @@ const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&":
 const ZODIAC_LIST = ["鼠", "牛", "虎", "兔", "龙", "蛇", "马", "羊", "猴", "鸡", "狗", "猪"];
 const SEX_OPTIONS = ["男", "女"];
 
+/* ---------------- 日期组件（年/月/日 + 时辰下拉） ---------------- */
+const YEARS = []; for (let y = new Date().getFullYear(); y >= 1920; y--) YEARS.push([y, y + "年"]);
+const MONTHS = []; for (let m = 1; m <= 12; m++) MONTHS.push([m, m + "月"]);
+const SHICHEN_OPTS = [
+  ["", "不知道时辰（按午时 12:00）"],
+  ["23", "子时 23:00–00:59"], ["1", "丑时 01:00–02:59"], ["3", "寅时 03:00–04:59"],
+  ["5", "卯时 05:00–06:59"], ["7", "辰时 07:00–08:59"], ["9", "巳时 09:00–10:59"],
+  ["11", "午时 11:00–12:59"], ["13", "未时 13:00–14:59"], ["15", "申时 15:00–16:59"],
+  ["17", "酉时 17:00–18:59"], ["19", "戌时 19:00–20:59"], ["21", "亥时 21:00–22:59"],
+];
+
+function placeholderOpt(text) {
+  const p = document.createElement("option");
+  p.value = ""; p.textContent = text; p.disabled = true; p.selected = true; p.hidden = true;
+  return p;
+}
+function mkSel(name, items, placeholder) {
+  const s = document.createElement("select");
+  s.name = name; s.required = true;
+  s.appendChild(placeholderOpt(placeholder));
+  items.forEach(([v, t]) => {
+    const o = document.createElement("option");
+    o.value = v; o.textContent = t; s.appendChild(o);
+  });
+  return s;
+}
+function daySel(name) {
+  const s = document.createElement("select");
+  s.name = name; s.required = true;
+  s.appendChild(placeholderOpt("日"));
+  for (let d = 1; d <= 31; d++) {
+    const o = document.createElement("option");
+    o.value = d; o.textContent = d + "日"; s.appendChild(o);
+  }
+  return s;
+}
+/* 闰年/大小月联动：年月变化时重建"日"选项并尽量保留已选值 */
+function fixDays(ys, ms, ds) {
+  const y = +ys.value || 2000, m = +ms.value || 1;
+  const max = new Date(y, m, 0).getDate();
+  const cur = ds.value;
+  ds.innerHTML = "";
+  const p = placeholderOpt("日");
+  if (cur) p.selected = false;
+  ds.appendChild(p);
+  for (let d = 1; d <= max; d++) {
+    const o = document.createElement("option");
+    o.value = d; o.textContent = d + "日";
+    if (String(d) === cur) o.selected = true;
+    ds.appendChild(o);
+  }
+}
+function fillYMD(container, prefix) {
+  const ys = mkSel(prefix + "-y", YEARS, "年");
+  const ms = mkSel(prefix + "-m", MONTHS, "月");
+  const ds = daySel(prefix + "-d");
+  ys.addEventListener("change", () => fixDays(ys, ms, ds));
+  ms.addEventListener("change", () => fixDays(ys, ms, ds));
+  container.append(ys, ms, ds);
+}
+const dstr = (d, k) => d[k + "-y"] + "-" + String(d[k + "-m"]).padStart(2, "0") + "-" + String(d[k + "-d"]).padStart(2, "0");
+const hval = (d, k) => (d[k] === "" || d[k] == null ? 12 : +d[k]);
+
 const MODES = {
   hehun: {
     title: "八字合婚", sub: "双方生辰八字，六维加权评分（天干 / 地支 / 日柱 / 五行 / 纳音）",
     fields: [
-      { k: "a_date", label: "你的生日", type: "date", required: true },
-      { k: "a_hour", label: "你的出生时刻", type: "time", def: "12:00" },
+      { k: "a_date", label: "你的生日", type: "birth", required: true },
+      { k: "a_hour", label: "你的出生时辰（可选）", type: "shichen" },
       { k: "a_sex", label: "你的性别", type: "select", options: SEX_OPTIONS, def: "男" },
-      { k: "b_date", label: "对方生日", type: "date", required: true },
-      { k: "b_hour", label: "对方出生时刻", type: "time", def: "12:00" },
+      { k: "b_date", label: "对方生日", type: "birth", required: true },
+      { k: "b_hour", label: "对方出生时辰（可选）", type: "shichen" },
       { k: "b_sex", label: "对方性别", type: "select", options: SEX_OPTIONS, def: "女" },
     ],
     submit: "开始合婚",
     api: "/api/hehun",
     collect: (f) => ({
-      a_date: f.a_date, a_hour: +(f.a_hour || "12:00").split(":")[0], a_minute: +((f.a_hour || "12:00").split(":")[1] || 0), a_sex: f.a_sex,
-      b_date: f.b_date, b_hour: +(f.b_hour || "12:00").split(":")[0], b_minute: +((f.b_hour || "12:00").split(":")[1] || 0), b_sex: f.b_sex,
+      a_date: dstr(f, "a_date"), a_hour: hval(f, "a_hour"), a_minute: 0, a_sex: f.a_sex,
+      b_date: dstr(f, "b_date"), b_hour: hval(f, "b_hour"), b_minute: 0, b_sex: f.b_sex,
     }),
     render: renderHehun, badge: "八字合婚",
   },
@@ -40,19 +103,19 @@ const MODES = {
   ziwei: {
     title: "紫微夫妻宫", sub: "安星布局，看命盘里的婚姻格局",
     fields: [
-      { k: "date", label: "出生日期", type: "date", required: true },
-      { k: "hour", label: "出生时刻", type: "time", def: "12:00" },
+      { k: "date", label: "出生日期", type: "birth", required: true },
+      { k: "hour", label: "出生时辰（可选）", type: "shichen" },
       { k: "sex", label: "性别", type: "select", options: SEX_OPTIONS, def: "男" },
     ],
     submit: "排夫妻宫",
     api: "/api/ziwei",
-    collect: (f) => ({ date: f.date, hour: +(f.hour || "12:00").split(":")[0], minute: +((f.hour || "12:00").split(":")[1] || 0), sex: f.sex }),
+    collect: (f) => ({ date: dstr(f, "date"), hour: hval(f, "hour"), minute: 0, sex: f.sex }),
     render: renderZiwei, badge: "紫微夫妻宫",
   },
   taohua: {
     title: "桃花运势", sub: "本命桃花位 · 旺月 · 流年桃花一表看清",
     fields: [
-      { k: "year", label: "出生年份", type: "number", def: "1995", min: 1900, max: 2020, required: true },
+      { k: "year", label: "出生年份", type: "year", required: true },
       { k: "status", label: "当前感情状态", type: "select", options: ["单身", "暗恋中", "恋爱中", "已婚", "顺其自然"] },
     ],
     submit: "查看桃花",
@@ -63,14 +126,14 @@ const MODES = {
   hongxian: {
     title: "红线测算", sub: "正缘画像 + 未来八年缘分时间窗",
     fields: [
-      { k: "date", label: "你的生日", type: "date", required: true },
-      { k: "hour", label: "出生时刻", type: "time", def: "12:00" },
+      { k: "date", label: "你的生日", type: "birth", required: true },
+      { k: "hour", label: "出生时辰（可选）", type: "shichen" },
       { k: "sex", label: "性别", type: "select", options: SEX_OPTIONS, def: "男" },
       { k: "expect", label: "你的期待（可选）", type: "text", placeholder: "如：脱单 / 异地 / 结婚 / 复合 / 暗恋" },
     ],
     submit: "牵起红线",
     api: "/api/hongxian",
-    collect: (f) => ({ date: f.date, hour: +(f.hour || "12:00").split(":")[0], minute: +((f.hour || "12:00").split(":")[1] || 0), sex: f.sex, expect: f.expect || "" }),
+    collect: (f) => ({ date: dstr(f, "date"), hour: hval(f, "hour"), minute: 0, sex: f.sex, expect: f.expect || "" }),
     render: renderHongxian, badge: "红线测算",
   },
   qiuqian: {
@@ -103,31 +166,55 @@ function openMode(key, preset) {
   m.fields.forEach((f) => {
     const wrap = document.createElement("div");
     wrap.className = "field" + (f.full ? " full" : "");
-    const id = "f-" + f.k;
-    let input;
-    if (f.type === "select") {
-      input = document.createElement("select");
-      f.options.forEach((o) => {
-        const opt = document.createElement("option");
-        opt.value = o; opt.textContent = o;
-        if (f.def && o === f.def) opt.selected = true;
-        input.appendChild(opt);
-      });
-    } else {
-      input = document.createElement("input");
-      input.type = f.type || "text";
-      if (f.def) input.value = f.def;
-      if (f.placeholder) input.placeholder = f.placeholder;
-      if (f.min) input.min = f.min;
-      if (f.max) input.max = f.max;
-    }
-    input.id = id;
-    input.name = f.k;
-    if (f.required) input.required = true;
     const label = document.createElement("label");
-    label.htmlFor = id;
     label.textContent = f.label + (f.required ? " *" : "");
-    wrap.appendChild(label); wrap.appendChild(input);
+    wrap.appendChild(label);
+
+    if (f.type === "birth") {
+      const ymd = document.createElement("div");
+      ymd.className = "ymd";
+      fillYMD(ymd, f.k);
+      wrap.appendChild(ymd);
+    } else {
+      const id = "f-" + f.k;
+      let input;
+      if (f.type === "select") {
+        input = document.createElement("select");
+        f.options.forEach((o) => {
+          const opt = document.createElement("option");
+          opt.value = o; opt.textContent = o;
+          if (f.def && o === f.def) opt.selected = true;
+          input.appendChild(opt);
+        });
+      } else if (f.type === "shichen") {
+        input = document.createElement("select");
+        SHICHEN_OPTS.forEach(([v, t]) => {
+          const opt = document.createElement("option");
+          opt.value = v; opt.textContent = t;
+          input.appendChild(opt);
+        });
+      } else if (f.type === "year") {
+        input = document.createElement("select");
+        input.appendChild(placeholderOpt("选择年份"));
+        YEARS.forEach(([v, t]) => {
+          const opt = document.createElement("option");
+          opt.value = v; opt.textContent = t;
+          input.appendChild(opt);
+        });
+      } else {
+        input = document.createElement("input");
+        input.type = f.type || "text";
+        if (f.def) input.value = f.def;
+        if (f.placeholder) input.placeholder = f.placeholder;
+        if (f.min) input.min = f.min;
+        if (f.max) input.max = f.max;
+      }
+      input.id = id;
+      input.name = f.k;
+      if (f.required) input.required = true;
+      label.htmlFor = id;
+      wrap.appendChild(input);
+    }
     grid.appendChild(wrap);
   });
   formEl.appendChild(grid);
@@ -234,8 +321,8 @@ function renderHehun(r) {
     '<div class="score-wrap">' + ring(r.score) +
     '<div class="score-side"><div class="grade">' + esc(r.grade) + '</div><div class="desc">' + esc(r.grade_desc) + "</div></div></div>" +
     dims +
-    '<div class="pillars-note" style="text-align:center;color:var(--ink-2);font-size:13px;margin-top:10px">双方命盘</div>' +
-    pil(r.a, "你方") + pil(r.b, "对方") +
+    '<div class="pillars-note">你方：' + esc(r.a.lunar) + "　·　对方：" + esc(r.b.lunar) + "</div>" +
+    pil(r.a.pillars, "你方") + pil(r.b.pillars, "对方") +
     '<ul class="notes">' + r.notes.map((n) => "<li>" + esc(n) + "</li>").join("") + "</ul>" +
     '<div class="report-foot">' + esc(r.summary) + "</div>";
   return card("八字合婚报告", "八字合婚", inner);
@@ -329,19 +416,28 @@ function renderQian(r) {
 }
 
 /* ---------------- 首页合婚入口 ---------------- */
+fillYMD($("#hero-a"), "hero-a");
+fillYMD($("#hero-b"), "hero-b");
+
+function readYMD(prefix) {
+  const g = (s) => document.querySelector('[name="' + prefix + "-" + s + '"]');
+  const y = g("y").value, m = g("m").value, d = g("d").value;
+  return y && m && d ? { y, m, d } : null;
+}
+
 $("#hero-go").addEventListener("click", () => {
-  const a = $("#hero-a").value, b = $("#hero-b").value;
+  const a = readYMD("hero-a"), b = readYMD("hero-b");
   if (!a || !b) {
     openMode("hehun");
-    $("#form-error").textContent = "请先填好双方生日";
+    $("#form-error").textContent = "请先把双方生日的年月日选完整";
     return;
   }
-  openMode("hehun", { a_date: a, b_date: b });
+  openMode("hehun", {
+    "a_date-y": a.y, "a_date-m": a.m, "a_date-d": a.d,
+    "b_date-y": b.y, "b_date-m": b.m, "b_date-d": b.d,
+  });
   formEl.requestSubmit();
 });
-[$("#hero-a"), $("#hero-b")].forEach((el) =>
-  el.addEventListener("keydown", (e) => { if (e.key === "Enter") $("#hero-go").click(); })
-);
 
 /* ---------------- 求签专区 ---------------- */
 $("#qian-go").addEventListener("click", async () => {
