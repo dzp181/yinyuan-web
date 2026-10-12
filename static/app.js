@@ -7,9 +7,7 @@ const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&":
 const ZODIAC_LIST = ["鼠", "牛", "虎", "兔", "龙", "蛇", "马", "羊", "猴", "鸡", "狗", "猪"];
 const SEX_OPTIONS = ["男", "女"];
 
-/* ---------------- 日期组件（年/月/日 + 时辰下拉） ---------------- */
-const YEARS = []; for (let y = new Date().getFullYear(); y >= 1920; y--) YEARS.push([y, y + "年"]);
-const MONTHS = []; for (let m = 1; m <= 12; m++) MONTHS.push([m, m + "月"]);
+/* ---------------- 日期组件（年/月/日手动输入 + 时辰下拉） ---------------- */
 const SHICHEN_OPTS = [
   ["", "不知道时辰（按午时 12:00）"],
   ["23", "子时 23:00–00:59"], ["1", "丑时 01:00–02:59"], ["3", "寅时 03:00–04:59"],
@@ -18,56 +16,32 @@ const SHICHEN_OPTS = [
   ["17", "酉时 17:00–18:59"], ["19", "戌时 19:00–20:59"], ["21", "亥时 21:00–22:59"],
 ];
 
-function placeholderOpt(text) {
-  const p = document.createElement("option");
-  p.value = ""; p.textContent = text; p.disabled = true; p.selected = true; p.hidden = true;
-  return p;
+function mkNum(name, ph, val, maxlen) {
+  const i = document.createElement("input");
+  i.type = "text"; i.inputMode = "numeric"; i.name = name;
+  i.placeholder = ph; i.maxLength = maxlen; i.autocomplete = "off";
+  if (val) i.value = val;
+  return i;
 }
-function mkSel(name, items, placeholder) {
-  const s = document.createElement("select");
-  s.name = name; s.required = true;
-  s.appendChild(placeholderOpt(placeholder));
-  items.forEach(([v, t]) => {
-    const o = document.createElement("option");
-    o.value = v; o.textContent = t; s.appendChild(o);
-  });
-  return s;
-}
-function daySel(name) {
-  const s = document.createElement("select");
-  s.name = name; s.required = true;
-  s.appendChild(placeholderOpt("日"));
-  for (let d = 1; d <= 31; d++) {
-    const o = document.createElement("option");
-    o.value = d; o.textContent = d + "日"; s.appendChild(o);
-  }
-  return s;
-}
-/* 闰年/大小月联动：年月变化时重建"日"选项并尽量保留已选值 */
-function fixDays(ys, ms, ds) {
-  const y = +ys.value || 2000, m = +ms.value || 1;
-  const max = new Date(y, m, 0).getDate();
-  const cur = ds.value;
-  ds.innerHTML = "";
-  const p = placeholderOpt("日");
-  if (cur) p.selected = false;
-  ds.appendChild(p);
-  for (let d = 1; d <= max; d++) {
-    const o = document.createElement("option");
-    o.value = d; o.textContent = d + "日";
-    if (String(d) === cur) o.selected = true;
-    ds.appendChild(o);
-  }
-}
+/* 生日：年(默认2000)/月/日 三个手动输入框 */
 function fillYMD(container, prefix) {
-  const ys = mkSel(prefix + "-y", YEARS, "年");
-  const ms = mkSel(prefix + "-m", MONTHS, "月");
-  const ds = daySel(prefix + "-d");
-  ys.addEventListener("change", () => fixDays(ys, ms, ds));
-  ms.addEventListener("change", () => fixDays(ys, ms, ds));
-  container.append(ys, ms, ds);
+  container.append(
+    mkNum(prefix + "-y", "年", "2000", 4),
+    mkNum(prefix + "-m", "月", "", 2),
+    mkNum(prefix + "-d", "日", "", 2),
+  );
 }
-const dstr = (d, k) => d[k + "-y"] + "-" + String(d[k + "-m"]).padStart(2, "0") + "-" + String(d[k + "-d"]).padStart(2, "0");
+/* 手动输入拼成 YYYY-MM-DD 并校验（非法日期直接抛错，由表单错误区展示） */
+function dstr(d, k) {
+  const y = +(d[k + "-y"] || ""), m = +(d[k + "-m"] || ""), dd = +(d[k + "-d"] || "");
+  if (!y || !m || !dd) throw new Error("请把生日的年、月、日填完整");
+  const thisYear = new Date().getFullYear();
+  if (y < 1900 || y > thisYear) throw new Error("年份需在 1900–" + thisYear + " 之间");
+  if (m < 1 || m > 12) throw new Error("月份需在 1–12 之间");
+  const max = new Date(y, m, 0).getDate();
+  if (dd < 1 || dd > max) throw new Error(y + " 年 " + m + " 月没有 " + dd + " 日，请检查");
+  return y + "-" + String(m).padStart(2, "0") + "-" + String(dd).padStart(2, "0");
+}
 const hval = (d, k) => (d[k] === "" || d[k] == null ? 12 : +d[k]);
 
 const MODES = {
@@ -115,12 +89,16 @@ const MODES = {
   taohua: {
     title: "桃花运势", sub: "本命桃花位 · 旺月 · 流年桃花一表看清",
     fields: [
-      { k: "year", label: "出生年份", type: "year", required: true },
+      { k: "year", label: "出生年份", type: "text", def: "2000", required: true, maxlength: 4, numeric: true },
       { k: "status", label: "当前感情状态", type: "select", options: ["单身", "暗恋中", "恋爱中", "已婚", "顺其自然"] },
     ],
     submit: "查看桃花",
     api: "/api/taohua",
-    collect: (f) => ({ year: +f.year, status: f.status && f.status !== "顺其自然" ? f.status : "" }),
+    collect: (f) => {
+      const y = +f.year;
+      if (!y || y < 1900 || y > new Date().getFullYear()) throw new Error("请填写正确的出生年份（1900–" + new Date().getFullYear() + "）");
+      return { year: y, status: f.status && f.status !== "顺其自然" ? f.status : "" };
+    },
     render: renderTaohua, badge: "桃花运势",
   },
   hongxian: {
@@ -193,19 +171,13 @@ function openMode(key, preset) {
           opt.value = v; opt.textContent = t;
           input.appendChild(opt);
         });
-      } else if (f.type === "year") {
-        input = document.createElement("select");
-        input.appendChild(placeholderOpt("选择年份"));
-        YEARS.forEach(([v, t]) => {
-          const opt = document.createElement("option");
-          opt.value = v; opt.textContent = t;
-          input.appendChild(opt);
-        });
       } else {
         input = document.createElement("input");
         input.type = f.type || "text";
         if (f.def) input.value = f.def;
         if (f.placeholder) input.placeholder = f.placeholder;
+        if (f.maxlength) input.maxLength = f.maxlength;
+        if (f.numeric) input.inputMode = "numeric";
         if (f.min) input.min = f.min;
         if (f.max) input.max = f.max;
       }
@@ -415,58 +387,8 @@ function renderQian(r) {
   return card("姻缘签 · " + r.no_cn, "姻缘签", inner);
 }
 
-/* ---------------- 首页合婚入口 ---------------- */
-fillYMD($("#hero-a"), "hero-a");
-fillYMD($("#hero-b"), "hero-b");
-
-function readYMD(prefix) {
-  const g = (s) => document.querySelector('[name="' + prefix + "-" + s + '"]');
-  const y = g("y").value, m = g("m").value, d = g("d").value;
-  return y && m && d ? { y, m, d } : null;
-}
-
-$("#hero-go").addEventListener("click", () => {
-  const a = readYMD("hero-a"), b = readYMD("hero-b");
-  if (!a || !b) {
-    openMode("hehun");
-    $("#form-error").textContent = "请先把双方生日的年月日选完整";
-    return;
-  }
-  openMode("hehun", {
-    "a_date-y": a.y, "a_date-m": a.m, "a_date-d": a.d,
-    "b_date-y": b.y, "b_date-m": b.m, "b_date-d": b.d,
-  });
-  formEl.requestSubmit();
-});
-
-/* ---------------- 求签专区 ---------------- */
-$("#qian-go").addEventListener("click", async () => {
-  const name = $("#qian-name").value.trim();
-  const question = $("#qian-question").value.trim();
-  if (!question) { $("#qian-question").focus(); $("#qian-question").placeholder = "先写下你想问的问题吧～"; return; }
-  const btn = $("#qian-go");
-  btn.disabled = true; btn.textContent = "摇签中…";
-  try {
-    const res = await fetch("/api/qiuqian", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, question }),
-    });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || "求签失败");
-    const html = renderQian(json);
-    appendReport(html);
-    openMode("qiuqian", { name, question });
-    resEl.innerHTML = html; resEl.hidden = false;
-    $("#qian-question").value = "";
-  } catch (ex) {
-    alert(ex.message);
-  } finally {
-    btn.disabled = false; btn.textContent = "诚心求签";
-  }
-});
-
 /* ---------------- 导航高亮 ---------------- */
-const secIds = ["home", "cesuan", "qiuqian", "baogao"];
+const secIds = ["home", "cesuan", "baogao"];
 window.addEventListener("scroll", () => {
   let cur = "home";
   secIds.forEach((id) => {
